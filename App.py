@@ -1,6 +1,11 @@
+from curses import meta
+from PIL.ExifTags import TAGS
 import tkinter as tk
 import tkinter.filedialog as fd
 import os
+import json
+from PIL import Image,ExifTags
+from datetime import datetime
 class App:
     # create a gui window
     def __init__(self, master):
@@ -23,13 +28,17 @@ class App:
         self.directory = fd.askdirectory(title="Select your photos directory")
         filepath_to_images = self.directory
         # get all the images in the directory
-        self.images = [f for f in os.listdir(filepath_to_images) if f.endswith('.jpg')]
+        self.images = [f for f in os.listdir(filepath_to_images) if f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg') or f.endswith('.JPG')]
         # ask the user to select a directory to put the images in
         self.user_organized_photo_directory = fd.askdirectory(title="Select a directory to put your images in")
         # loop through the images and copy them to the user selected directory
         for image in self.images:
-            os.system("cp " + filepath_to_images + "/" + image + " " + self.user_organized_photo_directory)
+            image_path=str(filepath_to_images)+"/"+str(image)
+            image_path=self.correct_path(image_path)
+            os.system("cp " + image_path + " " + str(self.user_organized_photo_directory))
+            print("Image %s copied",image)
         # create a event window to tell the user that the images have been organized
+        self.regroup_images_by_day()
         self.event_window = tk.Tk()
         self.event_window.geometry("200x200")
         self.event_window.title("Images organized")
@@ -38,7 +47,87 @@ class App:
         self.button = tk.Button(self.event_window, text="Close", command=self.event_window.destroy)
         self.button.pack()
         self.event_window.mainloop()
-    
+    def correct_path(self, path:str):
+        return path.replace(" ", "\\ ").replace("?", "\\?").replace("&", "\\&").replace("(", "\\(").replace(")", "\\)").replace("*", "\\*").replace("<", "\\<").replace(">", "\\>")
+    def regroup_images_by_day(self):
+        # get all the images
+        images=self.images
+        images_date=[]
+        filepath_to_images = self.directory
+        for image in images:
+            # get the metadata of the image
+            image_path=str(filepath_to_images)+"/"+str(image)
+            metadata = Image.open(image_path).getexif()
+            for tag, value in metadata.items():
+                decoded = TAGS.get(tag, tag)
+                if decoded == "DateTime":
+                    # get the date of the image
+                    date = value
+                    # get the year of the image
+                    year = date[0:4]
+                    # get the month of the image
+                    month = date[5:7]
+                    # get the day of the image
+                    day = date[8:10]
+                    # get the hour of the image
+                    hour = date[11:13]
+                    # get the minute of the image
+                    minute = date[14:16]
+                    # get the second of the image
+                    second = date[17:19]
+                    # get the date of the image
+                    date = date[0:10]
+                    # get the date of the image in the format YYYY-MM-DD
+                    date = year + "-" + month + "-" + day
+                    # get the time of the image in the format HH:MM:SS
+                    time = hour + ":" + minute + ":" + second
+                    # get the date and time of the image in the format YYYY-MM-DD HH:MM:SS
+                    date_time = date + " " + time
+                    # get the date and time of the image in the format YYYY-MM-DD HH:MM:SS
+                    date_time = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S')
+                    # get the date of the image
+                    date = date_time.date()
+                    images_date.append(date)
+        # for each date, create a directory and copy the images in it
+        for date in images_date:
+            os.system("mkdir " + str(self.user_organized_photo_directory) + "/" + str(date))
+            for image in images:
+                image_path=str(filepath_to_images)+"/"+str(image)
+                image_path=self.correct_path(image_path)
+                metadata = Image.open(image_path).getexif()
+                for tag, value in metadata.items():
+                    decoded = TAGS.get(tag, tag)
+                    if decoded == "DateTime":
+                        # get the date of the image
+                        image_date = value
+                        # get the year of the image
+                        year = image_date[0:4]
+                        # get the month of the image
+                        month = image_date[5:7]
+                        # get the day of the image
+                        day = image_date[8:10]
+                        # get the hour of the image
+                        hour = image_date[11:13]
+                        # get the minute of the image
+                        minute = image_date[14:16]
+                        # get the second of the image
+                        second = image_date[17:19]
+                        # get the date of the image
+                        image_date = image_date[0:10]
+                        # get the date of the image in the format YYYY-MM-DD
+                        image_date = year + "-" + month + "-" + day
+                        # get the time of the image in the format HH:MM:SS
+                        time = hour + ":" + minute + ":" + second
+                        # get the date and time of the image in the format YYYY-MM-DD HH:MM:SS
+                        image_date_time = image_date + " " + time
+                        # get the date and time of the image in the format YYYY-MM-DD HH:MM:SS
+                        image_date_time = datetime.strptime(image_date_time, '%Y-%m-%d %H:%M:%S')
+                        # get the date of the image
+                        image_date = image_date_time.date()
+                        if date == image_date:
+                            os.system("cp " + image_path + " " + str(self.user_organized_photo_directory) + "/" + str(date))
+                            print("Image %s copied",image)
+        pass
         
     def quit(self):
         self.master.destroy()
