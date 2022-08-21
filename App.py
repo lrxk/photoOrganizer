@@ -1,12 +1,9 @@
-from curses import meta
 from PIL.ExifTags import TAGS
 import tkinter as tk
 import tkinter.filedialog as fd
 import os
-import json
-from PIL import Image,ExifTags
-from datetime import date, datetime
-from tkcalendar import Calendar, DateEntry
+from PIL import Image
+from datetime import datetime
 from tkinter import simpledialog
 import exifread
 class App:
